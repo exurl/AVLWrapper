@@ -187,10 +187,13 @@ class Session:
     def _run_mode_analysis_cmds(self):
         cmds = self._load_files_cmds
         cmds += self._hide_plot_cmds
-        cmds += "mode\n"
-        cmds += "n\n"
-        cmds += f"s\n{self.name}.sys\n"
-        cmds += f"w\n{self.name}.eig\n"
+        cmds += "mode\n"  # enter modal analysis mode
+        cmds += "n\n"  # solve modal analysis
+        for case in self.cases:
+            case_num = case.number
+            cmds += f"{case_num}\n"  # select case
+            cmds += f"w\n{self.name}_{case_num}.eig\n"  # write eigenvalues
+            cmds += f"s\n{self.name}_{case_num}.sys\n"  # write system matrices
         cmds += "\nquit\n"
         return cmds
 
@@ -242,10 +245,14 @@ class Session:
         return out_file
 
     def _read_mode_results(self, target_dir):
-        results = dict()
-        for name, ext in self.MODE_OUTPUTS.items():
-            file_path = os.path.join(target_dir, f"{self.name}.{ext}")
-            results[name] = OutputReader(file_path=file_path).get_content()
+        results = []
+        for case in self.cases:
+            result = dict()
+            for name, ext in self.MODE_OUTPUTS.items():
+                num = case.number
+                file_path = os.path.join(target_dir, f"{self.name}_{num}.{ext}")
+                result[name] = OutputReader(file_path=file_path).get_content()
+            results.append(result)
         return results
 
     def show_geometry(self):
